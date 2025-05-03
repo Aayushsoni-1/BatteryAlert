@@ -1,3 +1,4 @@
+I am not able to hear the sound also my charger was plugged in still I wasn't able to hear the sound and hasn't seen the pop up to tell me about it 
 import tkinter as tk
 import psutil
 from tkinter import messagebox
@@ -8,7 +9,7 @@ import os
 
 # Sound file name 
 chargeME_sound = "ChargeMe.wav"
-RemoveCharger = "Charge-Remove.wav"
+RemoveCharger = "Charge_Remove.wav"
 last_low_battery_alert = 0
 last_full_battery_alert = 0
 reminder_interval = 60
@@ -26,7 +27,7 @@ def play_alert_sound_removePlug():
         print("Sound File doesn't Exist!")
 
 def play_alert_sound_addPlug():
-    if os.path.exists(chargeME_sound):
+    if os.path.exists( chargeME_sound):
         subprocess.call(["afplay", chargeME_sound])
     else: 
         print("Sound File doesn't exist!")
@@ -85,7 +86,7 @@ def monitor_battery():
             notified_low = False
             notified_full = False
 
-        time.sleep(20)  # Check every 5 seconds
+        time.sleep(60)  # Check every 5 seconds
 
 
 def show_startup_confirmation():
@@ -94,11 +95,9 @@ def show_startup_confirmation():
     messagebox.showinfo("Battery Monitor", "✅ Battery Monitor is now running in the background.")
     root.destroy()
 
-
 if __name__ == "__main__":
     show_startup_confirmation()
-    monitor_battery()
-    showPopUp()
 
     monitor_thread = threading.Thread(target=monitor_battery)
     monitor_thread.start()
+this is the full code
