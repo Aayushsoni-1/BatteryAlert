@@ -9,11 +9,14 @@ import os
 # Sound file name 
 chargeME_sound = "ChargeMe.wav"
 RemoveCharger = "Charge_Remove.wav"
+last_low_battery_alert = 0
+last_full_battery_alert = 0
+reminder_interval = 60
 
 
 # ✅ Flags to avoid repeating the same alert again and again
-notified_low = False
-notified_full = False
+notified_low = False       #Currently setting the notification at low battery to False
+notified_full = False      #Currently setting the notification at high battery to False
 battery = psutil.sensors_battery
 
 def play_alert_sound_removePlug():
@@ -25,7 +28,8 @@ def play_alert_sound_removePlug():
 def play_alert_sound_addPlug():
     if os.path.exists( chargeME_sound):
         subprocess.call(["afplay", chargeME_sound])
-    else: print("Sound File doesn't exist!")
+    else: 
+        print("Sound File doesn't exist!")
 
 def showPopUp(message):
     popup = tk.Tk() #To create a popup window!
@@ -46,35 +50,42 @@ reminder_state = {
     "last_reminder_time": 0
 }
 
-# To work here for adding the feature that if if user don't follow the instruction then again remind him for following the conditions!😉
+# To work here for adding the feature that if user don't follow the instruction then again remind him for following the conditions!😉
 
 def monitor_battery():
     global notified_low, notified_full
+    global last_low_battery_alert, last_full_battery_alert
 
     while True:
-            battery = psutil.sensors_battery
-            percent = battery.percent
-            plugged = battery.power_plugged
+        battery = psutil.sensors_battery()
+        percent = battery.percent
+        plugged = battery.power_plugged
+        current_time = time.time()
 
-            if percent == 100 and plugged and not notified_full:
-                threading.Thread(target=play_alert_sound_removePlug).start()
-                showPopUp("Battery is 100%. Please remove charger!")
-                notified_full = True
-                notified_low = False
-            elif percent == 20 and plugged and not notified_low:
+        if percent <= 20 and not plugged:
+            if current_time - last_low_battery_alert >= reminder_interval:
                 threading.Thread(target=play_alert_sound_addPlug).start()
-                showPopUp("Battery is below 20%. Please Charge!")
-                notified_full = False 
-                notified_low = True
-            elif 20 < percent < 100:
-                notified_low = False
-                notified_full = False
+                showPopUp("Battery is below 20%. Please charge")
+                last_low_battery_alert = current_time
+            notified_full = False
+            notified_low = True
 
-            time.sleep(60)
+        elif percent == 100 and plugged:
+            if current_time - last_full_battery_alert >= reminder_interval:
+                threading.Thread(target=play_alert_sound_removePlug).start()
+                showPopUp("Battery is Full. Remove the Charger Please!")
+                last_full_battery_alert = current_time
+            notified_full = True
+            notified_low = False
 
-def repeated_messaging():
-    battery = psutil.sensors_battery
+        else:
+            # Reset times if battery is in a normal state
+            last_low_battery_alert = 0
+            last_full_battery_alert = 0
+            notified_low = False
+            notified_full = False
 
+        time.sleep(60)  # Check every 5 seconds
 
 
 def show_startup_confirmation():
