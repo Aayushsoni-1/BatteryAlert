@@ -17,7 +17,7 @@ No more forgetting the charger or leaving it on overnight. Your battery health w
 Laptop batteries degrade faster if you:
 - Frequently drain them below 20%
 - Leave them plugged in at 100% for hours 😖
-
+- Also just the small notification about the battery status won't be much usefull as these app might be!
 This app:
 ✅ Warns you at 20%  
 ✅ Alerts you at 100%  
@@ -36,17 +36,17 @@ This app:
 
 ---
 
-## 🛠 How to Use
+## 🛠 How to Use ??
 
-1. Clone this repo or download the `.py` script
+1. Clone this repo or download the `.py` script along with the `.wav file`
 2. Place your custom `.wav` alert sounds as:
    - `ChargeMe.wav` → for low battery
    - `Charge_Remove.wav` → for full battery
 3. Run the app:
    ```bash
-   python3 BatteryMonitor.py
+   python3 BatteryMonitor.py  #For macOS user it is necessary to maintain python version you are using!
 
 Any Changes or Recommendations are welcomed🤗
 
-Note:- This app is currently for MACOS only!🥲
+Note:- This app is currently for MACOS only!🥲😅
 
