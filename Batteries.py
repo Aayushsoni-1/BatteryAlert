@@ -1,108 +1,105 @@
-import tkinter as tk #To create a GUI
-import psutil   #To get the sensor reading of the battery
-from tkinter import messagebox #To create a pop up message
-import threading #To create a thread
-import time #To create a delay
-import subprocess #To play the sound in macOS using afplay
-import os #To check if the sound file exists in the direcotory or not!
+import tkinter as tk   #For Making the GUI popups
+from tkinter import messagebox    #For startUp info popup
+import psutil       #To get the information about the battery!
+import threading    #To run the monitoring in the background and giving the asynchronous nature to these code!
+import time         #for delays that are there between the popups
+import sys          # For exiting on error or interrupt
+import subprocess   # To play sound using afplay
+import os           # To check if sound files exist
 
-# Sound file name 
-chargeME_sound = "ChargeMe.wav"
-RemoveCharger = "Charge-Remove.wav"
+# --- Constants ---
+LOW_BATTERY_THRESHOLD = 20
+FULL_BATTERY_THRESHOLD = 90
+CHECK_INTERVAL = 5  # seconds
 
+#-- Sound File ---
+LOW_BATTERY_SOUND = 'ChargeMe.wav'
+FULL_BATTERY_SOUND = 'Charge-Remove.wav'
 
-last_low_battery_alert = 0  #To keep track of the last low battery alert time
-last_full_battery_alert = 0  #To keep track of the last full battery alert time
-reminder_interval = 20  # 20 seconds interval for reminders if user doesn't take the actions
+class BatteryMonitor:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.withdraw()  # Hide the main window
 
-# Declaring the Global Variables
-# ✅ Flags to avoid repeating the same alert again and again
-notified_low = False       #Currently setting the notification at low battery to False
-notified_full = False      #Currently setting the notification at high battery to False
-battery = psutil.sensors_battery
+        # Flags and state
+        self.running = True
+        self.alert_low_shown = False     # Prevents repeated low battery alerts
+        self.alert_full_shown = False    # Prevents repeated full battery alerts
 
-#This functions checks if the sound file exists in the directory or not! and then plays the sound.
-def play_alert_sound_removePlug():
-    if os.path.exists(RemoveCharger):
-        subprocess.call(["afplay", RemoveCharger])
-    else:
-        print("Sound File doesn't Exist!")
+    def show_popup(self, message):
+        #This is for displaying a popup message window with auto-close after 5 sec
+        def popup():
+            top = tk.Toplevel()
+            top.title("Battery Alert")
+            top.geometry("350x150")
+            top.configure(bg="black")
+            top.attributes("-topmost", True)  #This will keep it going on top!
+            label = tk.Label(top, text=message, font=("Arial", 14), bg="black", fg="white")
+            label.pack(pady=20)
+            btn = tk.Button(top, text="Close", command=top.destroy)
+            btn.pack()
+            top.after(5000, top.destroy)  # Auto-close popup after 5 seconds
 
-def play_alert_sound_addPlug():
-    if os.path.exists(chargeME_sound):
-        subprocess.call(["afplay", chargeME_sound])
-    else: 
-        print("Sound File doesn't exist!")
+        self.root.after(0, popup)     # Schedule popup in Tkinter’s event loop
 
-#This function creates a pop up message with the given message and then closes it after 5 seconds.
-def showPopUp(message):
-    popup = tk.Tk() #To create a popup window!
-    popup.title("Battery Alert")
-    popup.attributes("-fullscreen", True) #To make it Full screen
-    popup.attributes("-topmost", True) #To keep it on the top 
-    popup.configure(bg="black")
+    def play_sound(self, sound_file):
+        if os.path.exists(sound_file):
+            try:
+                subprocess.run(['afplay', sound_file])
+            except Exception as e:
+                print(f"[Sound Error] {e}")
+            else:
+                print(f"[Missing File] Sound file not found: {sound_file}")
 
-    label = tk.Label(popup, text=message, font=("Helvetica", 48), fg="white", bg="black")
-    label.pack(expand=True)
+    def monitor_battery(self):
+        # The main battery monitoring loop (runs in background thread)
+        while self.running:
+            battery = psutil.sensors_battery()
+            if battery is None:
+                time.sleep(CHECK_INTERVAL)
+                continue        # Retry after delay if battery info is missing
 
-    popup.after(5000, popup.destroy)
-    popup.mainloop()
+            percent = battery.percent
+            plugged = battery.power_plugged
 
+            if percent <= LOW_BATTERY_THRESHOLD and not plugged:
+                self.show_popup("🔋 Battery low! Please connect the charger.")
+                self.play_sound(LOW_BATTERY_SOUND)
+                self.alert_low_shown = True
+                self.alert_full_shown = False
 
-reminder_state = {
-    "low_battery": False,
-    "full_battery":False,
-    "last_reminder_time": 0
-}
+            elif percent >= FULL_BATTERY_THRESHOLD and plugged:
+                self.show_popup("⚡ Battery is above 90%. Please remove the charger.")
+                self.play_sound(FULL_BATTERY_SOUND)
+                self.alert_full_shown = True
+                self.alert_low_shown = False
 
-#This function checks the battery status and sends notifications to the user if the battery is low or full.
-def monitor_battery():
-    global notified_low, notified_full
-    global last_low_battery_alert, last_full_battery_alert
+            else:
+                # If battery is in a normal state, reset alert flags
+                self.alert_low_shown = False
+                self.alert_full_shown = False
 
-    while True:
-        battery = psutil.sensors_battery()
-        percent = battery.percent
-        plugged = battery.power_plugged
-        current_time = time.time()
+            time.sleep(CHECK_INTERVAL)
 
-        if percent <= 20 and not plugged:
-            if current_time - last_low_battery_alert >= reminder_interval:
-                threading.Thread(target=play_alert_sound_addPlug).start()
-                showPopUp("Battery is below 20%. Please charge")
-                last_low_battery_alert = current_time
-            notified_full = False
-            notified_low = True
+    def start(self):
+        # Start the monitoring loop in a background thread
+        threading.Thread(target=self.monitor_battery, daemon=True).start()
+        self.root.mainloop()
+        #  Start the Tkinter event loop for popups
 
-        elif percent == 100 and plugged:
-            if current_time - last_full_battery_alert >= reminder_interval:
-                threading.Thread(target=play_alert_sound_removePlug).start()
-                showPopUp("Battery is Full. Remove the Charger Please!")
-                last_full_battery_alert = current_time
-            notified_full = True
-            notified_low = False
+    def stop(self):
+        self.running = False
+        self.root.quit()
 
-        else:
-            # Reset times if battery is in a normal state
-            last_low_battery_alert = 0
-            last_full_battery_alert = 0
-            notified_low = False
-            notified_full = False
-
-        time.sleep(600)  # Check every 10 minutes for the battery status.
-
-# This function shows a confirmation message when the script starts.
-def show_startup_confirmation():
-    root = tk.Tk()
-    root.withdraw()  # Hide main window
-    messagebox.showinfo("Battery Monitor", "✅ Battery Monitor is now running in the background.")
-    root.destroy()
-
-# This function shows a pop up message when the script starts.
+# --- Main Entry ---
 if __name__ == "__main__":
-    show_startup_confirmation()
-    monitor_battery()
-    showPopUp()
-# This function creates a thread to run the monitor_battery function in the background.
-    monitor_thread = threading.Thread(target=monitor_battery)
-    monitor_thread.start()
+    try:
+        monitor = BatteryMonitor()
+        messagebox.showinfo("Battery Monitor", "✅ Battery monitor is now running in background.")
+        monitor.start()
+    except KeyboardInterrupt:
+        monitor.stop()
+        sys.exit()
+    except Exception as e:
+        print(f"[Fatal Error] {e}")
+        sys.exit(1)
