@@ -9,7 +9,7 @@ import os           # To check if sound files exist
 
 # --- Constants ---
 LOW_BATTERY_THRESHOLD = 20
-FULL_BATTERY_THRESHOLD = 90
+FULL_BATTERY_THRESHOLD = 98
 CHECK_INTERVAL = 5  # seconds
 
 #-- Sound File ---
