@@ -80,17 +80,21 @@ For Windows Users:
 
 ---
 
-##Acknowledgements
+## Acknowledgements
 Built with love to help laptop users:
 Improve battery life
 Avoid battery degradation
 Stay stress-free while working
 Because good batteries make happy laptops! 🧠🔋
 
-📄 License
+---
+
+## 📄 License
 MIT License — Use freely, modify easily, and share widely.
 
-🙋‍♂️ Contribute
+---
+
+## 🙋‍♂️ Contribute
 Found a bug? Want a new feature?
 Feel free to open an issue or submit a pull request. Contributions are always welcome!
 
